@@ -17,6 +17,11 @@ async def IsAd(_,client:Client , callback:CallbackQuery)->bool:
 async def IsPurchase(_,client:Client , callback:CallbackQuery)->bool:
     content = callback.data.split('-')
     return ("acc" in content)or("rej" in content)
+async def IsRequest(_,client:Client,callback:CallbackQuery)->bool:
+    if callback.data.split("-")[1] == "unban" or callback.data.split("-")[1] == "banban":
+        return True
+    return False
+Req = filters.create(IsRequest)
 Ad = filters.create(IsAd)
 Pur = filters.create(IsPurchase)
 @Client.on_callback_query(Ad)
@@ -64,6 +69,21 @@ async def purchase_query(client:Client , callback:CallbackQuery):
         m1 = await database.ReadMessage(message_id= 11)
         await client.send_message(chat_id=content[0],text=m1)
     await callback.message.delete()
+
+
+@Client.on_callback_query(Req)
+async def unban_query(client:Client , callback:CallbackQuery):
+    info = callback.data.split("-")
+    if info[1] == "unban":
+        user = await database.FindUser(int(info[0]))
+        user.Critical = 5
+        if await database.UpdateUser(user=user):
+            await client.send_message(chat_id=int(info[0]),text="درخواست رفع محدودیت شما پذیرفته شد و شما میتوانید آگهی های خود را ارسال کنید")
+    else:
+        await client.send_message(chat_id=int(info[0]),text="با درخواست رفع محدودیت شما موافقت نشد")
+    await callback.message.delete()
+
+
 @Client.on_message(filters.group&filters.command("change"))
 async def change_message(client:Client , message:Message):
    id = await client.ask(chat_id=message.chat.id,text="شماره پیام را وارد کنید",user_id=message.from_user.id,filters=filters.text)

@@ -8,7 +8,10 @@ adminsGroupID = YOUR_GROUP_NUMERICAL_ID #is a negative integer
 channelID = "YOUR_TELEGRAM_CHANNEL_ID"
 
 database = Database()
-database.ReadBadWords()
+
+keyboard = ReplyKeyboardMarkup(
+    [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙","درخواست رفع محدودیت"]],resize_keyboard=True
+)
 
 async def BannedUser(_,client:Client,message:Message) -> bool:
     user = await database.FindUser(userid=message.from_user.id)
@@ -55,6 +58,13 @@ async def IsNew(_,client:Client,message:Message) -> bool:
     if (message.text).lower() == "new":return True
     return False
 
+async def IsBanned(id:int)->bool:
+    user = await database.FindUser(userid= id)
+    print(user.Critical)
+    if user.Critical > 0:
+        return False
+    else : return True
+
 Logged = filters.create(IsLogedIn)
 Permium = filters.create(IsPermium)
 Admin = filters.create(IsAdmin)
@@ -62,6 +72,11 @@ Banned = filters.create(BannedUser)
 New = filters.create(IsNew)
 
 
+
+@Client.on_message(filters.private & filters.command("initdatabase") & Admin)
+async def on_init(client,message):
+    if await database.ReadBadWords():
+        await message.reply_text(text="دیتا بیس با موفقیت اغاز به کار کرد")
 @Client.on_message(filters.command("start") & filters.private & Logged & ~filters.media_group)
 async def On_start_loggedin(client:Client , message:Message):
     user = await database.FindUser(message.from_user.id)
@@ -114,9 +129,7 @@ async def on_information(client:Client , message:Message):
 
 🤵‍♂️🤵‍♂️🤵‍♂️🤵‍♂️
     """
-    await message.reply_text(text=statement , reply_markup=ReplyKeyboardMarkup(
-        [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-    ))
+    await message.reply_text(text=statement , reply_markup=keyboard)
 @Client.on_message(filters.private & filters.regex("ویرایش اطلاعات") & Logged)
 async def on_editinfo(client:Client , message:Message):
     user = await database.FindUser(message.from_user.id)
@@ -126,17 +139,13 @@ async def on_editinfo(client:Client , message:Message):
                         ))
     name = await client.ask(chat_id=user.Id , text="نام و نام خانوادگی خود را وارد کنید" , filters=filters.text)
     if name.text == "انصراف":
-        await message.reply_text(text="تغیررات ذخیره نشد",reply_markup=ReplyKeyboardMarkup(
-            [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-        ))
+        await message.reply_text(text="تغیررات ذخیره نشد",reply_markup=keyboard)
         return
     tphonenumber = await client.ask(chat_id= user.Id,text="لطفا شماره تلفن خود را وارد کنید (مثال 09123456789)" ,filters=filters.text , )
     while len(tphonenumber.text) != 11 and tphonenumber.text != "رد شدن" and tphonenumber.text != "انصراف":
         tphonenumber = await client.ask(chat_id= user.Id,text="شماره تلفن وارد شده صحیح نیست دوباره امتحان کنید (مثال 09123456789)" ,filters=filters.text)
     if tphonenumber.text == "انصراف":
-        await message.reply_text(text="تغیررات ذخیره نشد",reply_markup=ReplyKeyboardMarkup(
-            [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-        ))
+        await message.reply_text(text="تغیررات ذخیره نشد",reply_markup=keyboard)
         return
     shop = await client.ask(chat_id= user.Id,text="لطفا نام فروشگاه خود را وارد کنید" , filters=filters.text)
     if name.text == "رد شدن":
@@ -150,17 +159,13 @@ async def on_editinfo(client:Client , message:Message):
     if shop.text == "رد شدن":
         shop = user.ShopName
     elif shop.text == "انصراف":
-        await message.reply_text(text="تغیررات ذخیره نشد",reply_markup=ReplyKeyboardMarkup(
-            [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-        ))
+        await message.reply_text(text="تغیررات ذخیره نشد",reply_markup=keyboard)
         return
     else:
         shop= shop.text
     tuser = User(id=user.Id,fullname=name,phonenumber=tphonenumber,shopName=shop,accountType=user.AccountType,expireDate=user.ExpireDate,critical=user.Critical)
     if await database.UpdateUser(tuser):
-        await message.reply_text(text="تغیررات ذخیره شد",reply_markup=ReplyKeyboardMarkup(
-            [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-        ))
+        await message.reply_text(text="تغیررات ذخیره شد",reply_markup=keyboard)
 @Client.on_message(filters.private & Logged & filters.regex("بازگشت"))
 async def on_back(client:Client,message:Message):
     await message.reply_text(text="منوی اصلی",reply_markup=ReplyKeyboardMarkup(
@@ -186,13 +191,9 @@ async def on_purchase(client:Client,message:Message):
                                                                 ))
     elif (str(res.text).lower() == "new" and user.IsFirstTime == 0):
         m = "کاربر گرامی شما یک بار از اشتراک رایگان استفاده کرده اید"
-        await message.reply_text(text=m,reply_markup=ReplyKeyboardMarkup(
-                [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-            ))
+        await message.reply_text(text=m,reply_markup=keyboard)
     elif res.text == "صرف نظر":
-            await message.reply_text(text="منو اطلاعات شخصی",reply_markup=ReplyKeyboardMarkup(
-                [["خرید/تمدید اشتراک 💵","ویرایش اطلاعات 📝"],["بازگشت 🔙"]],resize_keyboard=True
-            ))
+            await message.reply_text(text="منو اطلاعات شخصی",reply_markup=keyboard)
 @Client.on_message(filters.private & Logged & Permium & filters.regex("ثبت آگهی") & ~Banned)
 async def on_advertise(client:Client,message:Message):
     await message.reply_text("لطفا آگهی خود را ارسال کنید",reply_markup=ReplyKeyboardMarkup(
@@ -237,3 +238,34 @@ async def on_bad(client:Client,message:Message):
             await database.AddBadWord(res.text)
             counter+=1
     await message.reply_text(text=f"تعداد {counter} کلمه جدید فیلتر شد")
+@Client.on_message(filters.private & filters.command("unbad") & Admin)
+async def un_bad(client:Client , message:Message):
+    wordsStr = "bad word list"
+    for i in database.BadWords:
+        wordsStr += "\n"
+        wordsStr += str(i)
+    if len(wordsStr)== 13 :
+        await message.reply_text(text="کلمه فیلتر شده ای وجود ندار",reply_markup=keyboard)
+    else:
+        k = ReplyKeyboardMarkup(
+            [["لغو"]],resize_keyboard=True
+        )
+        await message.reply_text(text=wordsStr , reply_markup=k)
+        res = await client.ask(chat_id=message.from_user.id, text="لطفا  کلمه ای که میخواهید از فیلتر خارج کنید را وارد کنید" ,filters=filters.text)
+        if(res.text == "لغو"):
+            await message.reply_text(text="منو اصلی",reply_markup=keyboard)
+            return
+        if await database.RemoveBadWord(res.text):
+            await message.reply_text("کلمه با موفقیت از لیست فیلتر ها حذف شد",reply_markup=keyboard)
+        else:
+            await message.reply_text("ایراد در از  فیلتر خارج کردن کلمه",reply_markup=keyboard)
+@Client.on_message(filters.private & filters.regex("درخواست رفع محدودیت"))
+async def un_ban(client:Client , message:Message):
+    if not (await IsBanned(message.from_user.id)):
+        await message.reply_text("اکانت شما مصدود نیست" , reply_markup= keyboard)
+    else:
+        await message.reply_text("نتیجه در خواست بازبینی شما به شما اطلاع داده  خواهد شد " , reply_markup= keyboard)
+        await client.send_message(chat_id=adminsGroupID,text="درخواست رفع محدودیت", reply_markup=ikb(
+            [[["تایید ✅",f"{message.from_user.id}-unban"],["رد 🚫",f"{message.from_user.id}-banban"]],
+             [[f"@{message.from_user.username}",f"https://t.me/{message.from_user.username}","url"]]]
+        ))
