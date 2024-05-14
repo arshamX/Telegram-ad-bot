@@ -92,5 +92,5 @@ async def change_message(client:Client , message:Message):
        [["لغو"]] , resize_keyboard=True 
    ))
    newmessage= await client.ask(chat_id=message.chat.id,user_id=message.from_user.id,text="پیام جدید را وارد کنید در صورت درخواست برای لغو لغو را انتخاب کنید")
-   if newmessage == "لغو":await message.reply_text(text="عملیات با موفقیت لغو شد",reply_markup=ReplyKeyboardRemove())
+   if newmessage.text == "لغو":await message.reply_text(text="عملیات با موفقیت لغو شد",reply_markup=ReplyKeyboardRemove())
    elif await database.UpdateMessage(message_id=int(id.text),new_message=newmessage.text):await message.reply_text(text="عملیات با موفقیت انجام شد",reply_markup=ReplyKeyboardRemove())
